@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        //jdk 'JDK_HOME'
-        //maven 'MAVEN_HOME'
+        jdk 'JDK_HOME'
+        maven 'MAVEN_HOME'
         nodejs 'NODE_HOME'
     }
 
@@ -13,7 +13,7 @@ pipeline {
         FRONTEND_IMAGE = 'freshcart-frontend'
 
         // Docker Hub credentials
-        DOCKERHUB_USER = 'mvarevathi'
+        DOCKERHUB_USER = 'mvarevathi-uname'
         DOCKERHUB_PASS = 'chinnu@2005'
     }
 
