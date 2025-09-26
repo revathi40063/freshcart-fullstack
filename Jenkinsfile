@@ -42,16 +42,19 @@ pipeline {
         }
 
         stage('Run Docker Containers') {
-            steps {
-                bat "docker stop %BACKEND_IMAGE% || exit 0"
-                bat "docker rm %BACKEND_IMAGE% || exit 0"
-                bat "docker stop %FRONTEND_IMAGE% || exit 0"
-                bat "docker rm %FRONTEND_IMAGE% || exit 0"
+    steps {
+        // Stop & remove old containers
+        bat "docker stop ${env.BACKEND_IMAGE} || exit 0"
+        bat "docker rm ${env.BACKEND_IMAGE} || exit 0"
+        bat "docker stop ${env.FRONTEND_IMAGE} || exit 0"
+        bat "docker rm ${env.FRONTEND_IMAGE} || exit 0"
 
-                bat "docker run -d -p %BACKEND_PORT%:%BACKEND_PORT% --name %BACKEND_IMAGE% %BACKEND_IMAGE%"
-                bat "docker run -d -p %FRONTEND_PORT%:%FRONTEND_PORT% --name %FRONTEND_IMAGE% %FRONTEND_IMAGE%"
-            }
-        }
+        // Run containers with mapped ports
+        bat "docker run -d -p ${env.BACKEND_PORT}:${env.BACKEND_PORT} --name ${env.BACKEND_IMAGE} ${env.BACKEND_IMAGE}"
+        bat "docker run -d -p ${env.FRONTEND_PORT}:${env.FRONTEND_PORT} --name ${env.FRONTEND_IMAGE} ${env.FRONTEND_IMAGE}"
+    }
+}
+
 
         stage('Test Containers') {
             steps {
