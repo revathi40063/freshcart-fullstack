@@ -70,11 +70,11 @@ pipeline {
                 script {
                     // Login and push
                     docker.withRegistry('https://index.docker.io/v1/', "${env.DOCKERHUB_CREDENTIALS}") {
-                        bat "docker tag ${env.BACKEND_IMAGE} your-dockerhub-username/${env.BACKEND_IMAGE}:latest"
-                        bat "docker push your-dockerhub-username/${env.BACKEND_IMAGE}:latest"
+                        bat "docker tag ${env.BACKEND_IMAGE} mvarevathi/${env.BACKEND_IMAGE}:latest"
+                        bat "docker push mvarevathi/${env.BACKEND_IMAGE}:latest"
 
-                        bat "docker tag ${env.FRONTEND_IMAGE} your-dockerhub-username/${env.FRONTEND_IMAGE}:latest"
-                        bat "docker push your-dockerhub-username/${env.FRONTEND_IMAGE}:latest"
+                        bat "docker tag ${env.FRONTEND_IMAGE} mvarevathi/${env.FRONTEND_IMAGE}:latest"
+                        bat "docker push mvarevathi/${env.FRONTEND_IMAGE}:latest"
                     }
                 }
             }
