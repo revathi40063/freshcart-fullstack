@@ -5,9 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // Request interceptor to add auth token
@@ -19,9 +17,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Demo data for development
@@ -95,32 +91,16 @@ const DEMO_CATEGORIES = [
   { id: 'bakery', name: 'Bakery', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=200&fit=crop' }
 ];
 
-// API Functions
+// Auth API
 export const authAPI = {
   login: async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock data
-      return {
-        success: true,
-        user: {
-          id: 1,
-          name: 'Demo User',
-          email: email,
-          token: 'demo_token_123'
-        }
-      };
-    }/*
-      catch (error) {
-        console.error('Login error:', error.response?.data || error);
-        return {
-          success: false,
-          message: error.response?.data?.message || 'Server error during login'
-        };
-      }*/
-      
+      console.error('Login error:', error.response?.data || error);
+      return { success: false, message: 'Server error while logging in' };
+    }
   },
 
   register: async (name, email, password) => {
@@ -128,7 +108,6 @@ export const authAPI = {
       const response = await api.post('/auth/register', { name, email, password });
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock data
       return {
         success: true,
         user: {
@@ -138,64 +117,39 @@ export const authAPI = {
           token: 'demo_token_123'
         }
       };
-    }/*
-      catch (error) {
-        console.error('Register error:', error.response?.data || error);
-        return {
-          success: false,
-          message: error.response?.data?.message || 'Server error during registration'
-        };
-      }    */
+    }
   },
 
   getProfile: async () => {
     try {
       const response = await api.get('/auth/profile');
       return response.data;
-    } /*catch (error) {
-      // For demo purposes, return mock data
+    } catch (error) {
+      console.error('Get profile error:', error.response?.data || error);
       return {
-        id: 1,
-        name: 'Demo User',
-        email: 'demo@example.com',
-        avatar: 'https://via.placeholder.com/150'
+        success: false,
+        message: error.response?.data?.message || 'Server error while fetching profile'
       };
-    }*/
-      catch (error) {
-        console.error('Get profile error:', error.response?.data || error);
-        return {
-          success: false,
-          message: error.response?.data?.message || 'Server error while fetching profile'
-        };
-      }       
+    }
   }
 };
 
+// Products API
 export const productsAPI = {
   getProducts: async (filters = {}) => {
     try {
       const response = await api.get('/products', { params: filters });
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock data
       let products = [...DEMO_PRODUCTS];
-      
-      if (filters.category) {
-        products = products.filter(p => p.category === filters.category);
-      }
-      
-      if (filters.search) {
-        products = products.filter(p => 
-          p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          p.description.toLowerCase().includes(filters.search.toLowerCase())
+      if (filters.category) products = products.filter(p => p.category === filters.category);
+      if (filters.search)
+        products = products.filter(
+          p =>
+            p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+            p.description.toLowerCase().includes(filters.search.toLowerCase())
         );
-      }
-      
-      return {
-        success: true,
-        products,
-        total: products.length
-      };
+      return { success: true, products, total: products.length };
     }
   },
 
@@ -204,12 +158,8 @@ export const productsAPI = {
       const response = await api.get(`/products/${id}`);
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock data
       const product = DEMO_PRODUCTS.find(p => p.id === parseInt(id));
-      return {
-        success: true,
-        product: product || null
-      };
+      return { success: true, product: product || null };
     }
   },
 
@@ -218,22 +168,18 @@ export const productsAPI = {
       const response = await api.get('/categories');
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock data
-      return {
-        success: true,
-        categories: DEMO_CATEGORIES
-      };
+      return { success: true, categories: DEMO_CATEGORIES };
     }
   }
 };
 
+// Cart API
 export const cartAPI = {
   addToCart: async (productId, quantity) => {
     try {
       const response = await api.post('/cart/add', { productId, quantity });
       return response.data;
     } catch (error) {
-      // For demo purposes, return success
       return { success: true };
     }
   },
@@ -243,7 +189,6 @@ export const cartAPI = {
       const response = await api.delete(`/cart/remove/${productId}`);
       return response.data;
     } catch (error) {
-      // For demo purposes, return success
       return { success: true };
     }
   },
@@ -253,22 +198,18 @@ export const cartAPI = {
       const response = await api.get('/cart');
       return response.data;
     } catch (error) {
-      // For demo purposes, return empty cart
-      return {
-        success: true,
-        items: []
-      };
+      return { success: true, items: [] };
     }
   }
 };
 
+// Orders API
 export const orderAPI = {
   createOrder: async (orderData) => {
     try {
       const response = await api.post('/orders', orderData);
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock order
       return {
         success: true,
         order: {
@@ -286,46 +227,33 @@ export const orderAPI = {
       const response = await api.get('/orders');
       return response.data;
     } catch (error) {
-      // For demo purposes, return mock orders
       return {
         success: true,
         orders: [
-          {
-            id: 'ORD001',
-            date: '2024-01-15',
-            status: 'delivered',
-            total: 45.99,
-            items: 3
-          },
-          {
-            id: 'ORD002',
-            date: '2024-01-10',
-            status: 'shipped',
-            total: 32.50,
-            items: 2
-          }
+          { id: 'ORD001', date: '2024-01-15', status: 'delivered', total: 45.99, items: 3 },
+          { id: 'ORD002', date: '2024-01-10', status: 'shipped', total: 32.5, items: 2 }
         ]
       };
     }
   }
 };
 
+// Payment API
 export const paymentAPI = {
   processPayment: async (paymentData) => {
     try {
       const response = await api.post('/payment/process', paymentData);
       return response.data;
     } catch (error) {
-      // For demo purposes, simulate payment processing
-      return new Promise((resolve) => {
+      return new Promise(resolve =>
         setTimeout(() => {
           resolve({
             success: true,
             transactionId: 'TXN_' + Math.random().toString(36).substr(2, 9),
             status: 'completed'
           });
-        }, 2000);
-      });
+        }, 2000)
+      );
     }
   }
 };

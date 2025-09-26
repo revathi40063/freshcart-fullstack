@@ -75,7 +75,7 @@ const Signup = () => {
         if (result.success) {
           navigate('/profile');
         } else {
-          setErrors({ general: result.error || 'Signup failed' });
+          setErrors({ general: result.message || 'Signup failed' });
         }
       } catch (error) {
         setErrors({ general: 'An error occurred. Please try again.' });

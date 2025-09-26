@@ -64,7 +64,7 @@ const Login = () => {
         if (result.success) {
           navigate(from, { replace: true });
         } else {
-          setErrors({ general: result.error || 'Login failed' });
+          setErrors({ general: result.message || 'Login failed' });
         }
       } catch (error) {
         setErrors({ general: 'An error occurred. Please try again.' });

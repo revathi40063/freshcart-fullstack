@@ -14,8 +14,9 @@ pipeline {
         BACKEND_IMAGE = 'freshcart-backend'
         FRONTEND_IMAGE = 'freshcart-frontend'
 
-        BACKEND_PORT = '5000'
-        FRONTEND_PORT = '3000'
+        # Host ports (can be different if 3000/5000 busy)
+        BACKEND_HOST_PORT = '5001'
+        FRONTEND_HOST_PORT = '3001'
     }
 
     stages {
@@ -25,16 +26,11 @@ pipeline {
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build Docker Images') {
             steps {
                 dir("${BACKEND_DIR}") {
                     bat 'docker build -t %BACKEND_IMAGE% .'
                 }
-            }
-        }
-
-        stage('Build Frontend Docker Image') {
-            steps {
                 dir("${FRONTEND_DIR}") {
                     bat 'docker build -t %FRONTEND_IMAGE% .'
                 }
@@ -42,23 +38,22 @@ pipeline {
         }
 
         stage('Run Docker Containers') {
-    steps {
-        // Stop & remove old containers
-        bat "docker stop ${env.BACKEND_IMAGE} || exit 0"
-        bat "docker rm ${env.BACKEND_IMAGE} || exit 0"
-        bat "docker stop ${env.FRONTEND_IMAGE} || exit 0"
-        bat "docker rm ${env.FRONTEND_IMAGE} || exit 0"
+            steps {
+                // Stop & remove old containers if they exist
+                bat "docker stop %BACKEND_IMAGE% || exit 0"
+                bat "docker rm %BACKEND_IMAGE% || exit 0"
+                bat "docker stop %FRONTEND_IMAGE% || exit 0"
+                bat "docker rm %FRONTEND_IMAGE% || exit 0"
 
-        // Run containers with mapped ports
-        bat "docker run -d -p ${env.BACKEND_PORT}:${env.BACKEND_PORT} --name ${env.BACKEND_IMAGE} ${env.BACKEND_IMAGE}"
-        bat "docker run -d -p ${env.FRONTEND_PORT}:${env.FRONTEND_PORT} --name ${env.FRONTEND_IMAGE} ${env.FRONTEND_IMAGE}"
-    }
-}
-
+                // Run containers: backend 5000, frontend 3000
+                bat "docker run -d -p %BACKEND_HOST_PORT%:5000 --name %BACKEND_IMAGE% %BACKEND_IMAGE%"
+                bat "docker run -d -p %FRONTEND_HOST_PORT%:3000 --name %FRONTEND_IMAGE% %FRONTEND_IMAGE%"
+            }
+        }
 
         stage('Test Containers') {
             steps {
-                echo "You can add your API/HTTP test scripts here to verify containers"
+                echo "Add API/HTTP tests here"
             }
         }
 
