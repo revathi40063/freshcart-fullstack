@@ -1,11 +1,19 @@
 pipeline {
     agent any
 
+    tools {
+        // Add your tool names configured in Jenkins
+        jdk 'JDK_HOME'
+        maven 'MAVEN_HOME'
+        nodejs 'NODE_HOME'
+    }
+
     environment {
-        DOCKERHUB_USER = 'your-dockerhub-username'
-        DOCKERHUB_PASS = 'your-dockerhub-password'
         BACKEND_IMAGE = 'freshcart-backend'
         FRONTEND_IMAGE = 'freshcart-frontend'
+        DOCKERHUB_CREDENTIALS = 'docker-hub' // Jenkins credentials ID
+        BACKEND_PORT = '5000'
+        FRONTEND_PORT = '3000'
     }
 
     stages {
@@ -15,40 +23,59 @@ pipeline {
             }
         }
 
-        stage('Clone Repository') {
-            steps {
-                echo 'Repository cloned successfully.'
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
-                bat 'docker build -t %BACKEND_IMAGE% ./backend'
-                bat 'docker build -t %FRONTEND_IMAGE% ./frontend'
+                script {
+                    // Backend Docker build
+                    bat "docker build -t ${env.BACKEND_IMAGE} ./backend"
+
+                    // Frontend Docker build
+                    bat "docker build -t ${env.FRONTEND_IMAGE} ./frontend"
+                }
             }
         }
 
         stage('Run Docker Containers') {
             steps {
-                bat 'docker run -d -p 5000:5000 --name freshcart-backend %BACKEND_IMAGE%'
-                bat 'docker run -d -p 3000:3000 --name freshcart-frontend %FRONTEND_IMAGE%'
+                script {
+                    // Stop & remove old containers if running
+                    bat "docker stop ${env.BACKEND_IMAGE} || exit 0"
+                    bat "docker rm ${env.BACKEND_IMAGE} || exit 0"
+                    bat "docker stop ${env.FRONTEND_IMAGE} || exit 0"
+                    bat "docker rm ${env.FRONTEND_IMAGE} || exit 0"
+
+                    // Run containers
+                    bat "docker run -d -p ${env.BACKEND_PORT}:${env.BACKEND_PORT} --name ${env.BACKEND_IMAGE} ${env.BACKEND_IMAGE}"
+                    bat "docker run -d -p ${env.FRONTEND_PORT}:${env.FRONTEND_PORT} --name ${env.FRONTEND_IMAGE} ${env.FRONTEND_IMAGE}"
+                }
             }
         }
 
         stage('Test Containers') {
             steps {
-                bat 'docker ps'
+                script {
+                    // Wait for backend to start
+                    bat "timeout /t 10"
+                    bat "curl -f http://localhost:${env.BACKEND_PORT}/ || exit 1"
+
+                    // Wait for frontend to start
+                    bat "timeout /t 5"
+                    bat "curl -f http://localhost:${env.FRONTEND_PORT}/ || exit 1"
+                }
             }
         }
 
         stage('Push Images to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    bat 'docker login -u %USER% -p %PASS%'
-                    bat 'docker tag %BACKEND_IMAGE% %USER%/%BACKEND_IMAGE%'
-                    bat 'docker tag %FRONTEND_IMAGE% %USER%/%FRONTEND_IMAGE%'
-                    bat 'docker push %USER%/%BACKEND_IMAGE%'
-                    bat 'docker push %USER%/%FRONTEND_IMAGE%'
+                script {
+                    // Login and push
+                    docker.withRegistry('https://index.docker.io/v1/', "${env.DOCKERHUB_CREDENTIALS}") {
+                        bat "docker tag ${env.BACKEND_IMAGE} your-dockerhub-username/${env.BACKEND_IMAGE}:latest"
+                        bat "docker push your-dockerhub-username/${env.BACKEND_IMAGE}:latest"
+
+                        bat "docker tag ${env.FRONTEND_IMAGE} your-dockerhub-username/${env.FRONTEND_IMAGE}:latest"
+                        bat "docker push your-dockerhub-username/${env.FRONTEND_IMAGE}:latest"
+                    }
                 }
             }
         }
@@ -56,11 +83,17 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up containers...'
-            bat 'docker stop freshcart-backend || echo "Backend not running"'
-            bat 'docker stop freshcart-frontend || echo "Frontend not running"'
-            bat 'docker rm freshcart-backend || echo "Backend container not found"'
-            bat 'docker rm freshcart-frontend || echo "Frontend container not found"'
+            echo 'Cleaning up old containers...'
+            bat "docker stop ${env.BACKEND_IMAGE} || exit 0"
+            bat "docker rm ${env.BACKEND_IMAGE} || exit 0"
+            bat "docker stop ${env.FRONTEND_IMAGE} || exit 0"
+            bat "docker rm ${env.FRONTEND_IMAGE} || exit 0"
+        }
+        success {
+            echo 'CI/CD Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs.'
         }
     }
 }
