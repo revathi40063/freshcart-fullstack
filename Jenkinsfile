@@ -2,82 +2,102 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK_HOME'
-        maven 'MAVEN_HOME'
+        //jdk 'JDK_HOME'
+        //maven 'MAVEN_HOME'
         nodejs 'NODE_HOME'
     }
 
     environment {
-        BACKEND_DIR = 'backend'
-        FRONTEND_DIR = 'frontend'
-
-        BACKEND_IMAGE = 'freshcart-backend'
+        // Docker images
+        BACKEND_IMAGE  = 'freshcart-backend'
         FRONTEND_IMAGE = 'freshcart-frontend'
 
-        BACKEND_PORT = '5000'
-        FRONTEND_PORT = '3000'
+        // Docker Hub credentials
+        DOCKERHUB_USER = 'mvarevathi'
+        DOCKERHUB_PASS = 'chinnu@2005'
     }
 
     stages {
-        stage('Checkout SCM') {
+
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/revathi40063/freshcart-fullstack.git'
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build React Frontend') {
             steps {
-                dir("${BACKEND_DIR}") {
-                    bat 'docker build -t %BACKEND_IMAGE% .'
+                dir('frontend') {
+                    bat 'npm install'
+                    bat 'npm run build'
                 }
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Build Docker Images') {
             steps {
-                dir("${FRONTEND_DIR}") {
-                    bat 'docker build -t %FRONTEND_IMAGE% .'
-                }
+                // Backend Image
+                bat 'docker build -t %BACKEND_IMAGE% ./backend'
+                
+                // Frontend Image
+                bat 'docker build -t %FRONTEND_IMAGE% ./frontend'
             }
         }
 
         stage('Run Docker Containers') {
             steps {
-                bat "docker stop %BACKEND_IMAGE% || exit 0"
-                bat "docker rm %BACKEND_IMAGE% || exit 0"
-                bat "docker stop %FRONTEND_IMAGE% || exit 0"
-                bat "docker rm %FRONTEND_IMAGE% || exit 0"
+                // Stop & remove old containers if exist
+                bat 'docker stop %BACKEND_IMAGE% || exit 0'
+                bat 'docker rm %BACKEND_IMAGE% || exit 0'
+                bat 'docker stop %FRONTEND_IMAGE% || exit 0'
+                bat 'docker rm %FRONTEND_IMAGE% || exit 0'
 
-                bat "docker run -d -p %BACKEND_PORT%:%BACKEND_PORT% --name %BACKEND_IMAGE% %BACKEND_IMAGE%"
-                bat "docker run -d -p %FRONTEND_PORT%:%FRONTEND_PORT% --name %FRONTEND_IMAGE% %FRONTEND_IMAGE%"
+                // Run containers with dynamic ports
+                bat 'docker run -d -P --name %BACKEND_IMAGE% %BACKEND_IMAGE%'
+                bat 'docker run -d -P --name %FRONTEND_IMAGE% %FRONTEND_IMAGE%'
             }
         }
 
         stage('Test Containers') {
             steps {
-                echo "You can add your API/HTTP test scripts here to verify containers"
+                script {
+                    // Get the mapped backend port
+                    def backendPort = bat(script: 'docker port %BACKEND_IMAGE% 5000', returnStdout: true).trim()
+                    echo "Backend is running at http://localhost:${backendPort}"
+
+                    // Get the mapped frontend port
+                    def frontendPort = bat(script: 'docker port %FRONTEND_IMAGE% 80', returnStdout: true).trim()
+                    echo "Frontend is running at http://localhost:${frontendPort}"
+
+                    // Simple health check
+                    bat "curl http://localhost:${backendPort}/api/health"
+                }
             }
         }
 
         stage('Push Images to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'DOCKER_HUB_CRED',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS')]) {
-                    bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                    bat "docker tag %BACKEND_IMAGE% %DOCKER_USER%/%BACKEND_IMAGE%:latest"
-                    bat "docker push %DOCKER_USER%/%BACKEND_IMAGE%:latest"
-                    bat "docker tag %FRONTEND_IMAGE% %DOCKER_USER%/%FRONTEND_IMAGE%:latest"
-                    bat "docker push %DOCKER_USER%/%FRONTEND_IMAGE%:latest"
-                }
+                // Login to Docker Hub
+                bat "docker login -u %DOCKERHUB_USER% -p %DOCKERHUB_PASS%"
+
+                // Tag and push backend
+                bat "docker tag %BACKEND_IMAGE% %DOCKERHUB_USER%/%BACKEND_IMAGE%:latest"
+                bat "docker push %DOCKERHUB_USER%/%BACKEND_IMAGE%:latest"
+
+                // Tag and push frontend
+                bat "docker tag %FRONTEND_IMAGE% %DOCKERHUB_USER%/%FRONTEND_IMAGE%:latest"
+                bat "docker push %DOCKERHUB_USER%/%FRONTEND_IMAGE%:latest"
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline finished!'
+            echo 'Cleaning up containers...'
+            bat 'docker stop %BACKEND_IMAGE% || exit 0'
+            bat 'docker rm %BACKEND_IMAGE% || exit 0'
+            bat 'docker stop %FRONTEND_IMAGE% || exit 0'
+            bat 'docker rm %FRONTEND_IMAGE% || exit 0'
         }
     }
 }
