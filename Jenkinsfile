@@ -16,7 +16,7 @@ pipeline {
 
         # Host ports (can be different if 3000/5000 busy)
         BACKEND_HOST_PORT = '5001'
-        FRONTEND_HOST_PORT = '3001'
+        FRONTEND_HOST_PORT = '3000'
     }
 
     stages {
