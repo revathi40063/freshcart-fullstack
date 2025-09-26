@@ -15,7 +15,7 @@ pipeline {
         FRONTEND_IMAGE = 'freshcart-frontend'
 
         BACKEND_HOST_PORT = '5001'   // use 5001 if 5000 is busy
-        FRONTEND_HOST_PORT = '3000'
+        FRONTEND_HOST_PORT = '3001'
     }
 
     stages {
