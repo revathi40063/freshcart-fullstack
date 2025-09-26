@@ -15,7 +15,7 @@ pipeline {
         FRONTEND_IMAGE = 'freshcart-frontend'
 
         BACKEND_PORT = '5001'
-        FRONTEND_PORT = '3000'
+        FRONTEND_PORT = '3001'
     }
 
     stages {
