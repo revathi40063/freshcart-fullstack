@@ -14,8 +14,7 @@ pipeline {
         BACKEND_IMAGE = 'freshcart-backend'
         FRONTEND_IMAGE = 'freshcart-frontend'
 
-        # Host ports (can be different if 3000/5000 busy)
-        BACKEND_HOST_PORT = '5001'
+        BACKEND_HOST_PORT = '5001'   // use 5001 if 5000 is busy
         FRONTEND_HOST_PORT = '3000'
     }
 
@@ -28,26 +27,24 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                dir("${BACKEND_DIR}") {
-                    bat 'docker build -t %BACKEND_IMAGE% .'
+                dir("${env.BACKEND_DIR}") {
+                    bat "docker build -t ${env.BACKEND_IMAGE} ."
                 }
-                dir("${FRONTEND_DIR}") {
-                    bat 'docker build -t %FRONTEND_IMAGE% .'
+                dir("${env.FRONTEND_DIR}") {
+                    bat "docker build -t ${env.FRONTEND_IMAGE} ."
                 }
             }
         }
 
         stage('Run Docker Containers') {
             steps {
-                // Stop & remove old containers if they exist
-                bat "docker stop %BACKEND_IMAGE% || exit 0"
-                bat "docker rm %BACKEND_IMAGE% || exit 0"
-                bat "docker stop %FRONTEND_IMAGE% || exit 0"
-                bat "docker rm %FRONTEND_IMAGE% || exit 0"
+                bat "docker stop ${env.BACKEND_IMAGE} || exit 0"
+                bat "docker rm ${env.BACKEND_IMAGE} || exit 0"
+                bat "docker stop ${env.FRONTEND_IMAGE} || exit 0"
+                bat "docker rm ${env.FRONTEND_IMAGE} || exit 0"
 
-                // Run containers: backend 5000, frontend 3000
-                bat "docker run -d -p %BACKEND_HOST_PORT%:5000 --name %BACKEND_IMAGE% %BACKEND_IMAGE%"
-                bat "docker run -d -p %FRONTEND_HOST_PORT%:3000 --name %FRONTEND_IMAGE% %FRONTEND_IMAGE%"
+                bat "docker run -d -p ${env.BACKEND_HOST_PORT}:5000 --name ${env.BACKEND_IMAGE} ${env.BACKEND_IMAGE}"
+                bat "docker run -d -p ${env.FRONTEND_HOST_PORT}:3000 --name ${env.FRONTEND_IMAGE} ${env.FRONTEND_IMAGE}"
             }
         }
 
@@ -64,10 +61,10 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS')]) {
                     bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                    bat "docker tag %BACKEND_IMAGE% %DOCKER_USER%/%BACKEND_IMAGE%:latest"
-                    bat "docker push %DOCKER_USER%/%BACKEND_IMAGE%:latest"
-                    bat "docker tag %FRONTEND_IMAGE% %DOCKER_USER%/%FRONTEND_IMAGE%:latest"
-                    bat "docker push %DOCKER_USER%/%FRONTEND_IMAGE%:latest"
+                    bat "docker tag ${env.BACKEND_IMAGE} %DOCKER_USER%/${env.BACKEND_IMAGE}:latest"
+                    bat "docker push %DOCKER_USER%/${env.BACKEND_IMAGE}:latest"
+                    bat "docker tag ${env.FRONTEND_IMAGE} %DOCKER_USER%/${env.FRONTEND_IMAGE}:latest"
+                    bat "docker push %DOCKER_USER%/${env.FRONTEND_IMAGE}:latest"
                 }
             }
         }
